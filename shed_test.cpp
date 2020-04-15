@@ -98,9 +98,9 @@ void work(int time_units, int task_no, char output)
   }
 }
 
-static void* idle_thread(void *vptr)
+static void* thread_0(void *vptr)
 {
- int thread_no = (int) vptr;	
+ int thread_no = *(int*)vptr;	
  while(1)
  {
    work(1,thread_no,' ');
@@ -111,7 +111,7 @@ static void* idle_thread(void *vptr)
 static void *thread_1(void *vptr)
 {
 	
-        int thread_no = (int) vptr;	
+        int thread_no = *(int*)vptr;	
 	struct periodic_info info;
 
 	//printf("Thread 1 period 20 s\n");
@@ -127,7 +127,7 @@ static void *thread_1(void *vptr)
 static void *thread_2(void *vptr)
 {
 
-        int thread_no = (int) vptr;	
+        int thread_no = *(int*)vptr;	
 	struct periodic_info info;
 
 	//printf("Thread 2 period 10 s\n");
@@ -143,7 +143,7 @@ static void *thread_2(void *vptr)
 static void *thread_3(void *vptr)
 {
 
-        int thread_no = (int) vptr;	
+        int thread_no = *(int*)vptr;		
 	struct periodic_info info;
 
 	//printf("Thread 3 period 5 s\n");
@@ -210,11 +210,12 @@ int main(int argc, char *argv[])
 	pthread_attr_setschedparam(&attr_t3, &params_t3);	
 
 	//Create threads with scheduling parameters
-	
-	pthread_create(&t_3, &attr_t3, thread_3, (void*)3 );
-	pthread_create(&t_2, &attr_t2, thread_2, (void*)2 );
-	pthread_create(&t_1, &attr_t1, thread_1, (void*)1 );
-        pthread_create(&t_0, &attr_t0, idle_thread, (void*)0 );
+	int ids[] = { 0, 1, 2, 3 };
+
+	pthread_create(&t_3, &attr_t3, thread_3, (void*)&ids[3]);
+	pthread_create(&t_2, &attr_t2, thread_2, (void*)&ids[2]);
+	pthread_create(&t_1, &attr_t1, thread_1, (void*)&ids[1]);
+	pthread_create(&t_0, &attr_t0, thread_0, (void*)&ids[0]);
 
 	pthread_join(t_0,NULL);
 	pthread_join(t_1,NULL);
