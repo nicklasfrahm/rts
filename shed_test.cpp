@@ -20,7 +20,7 @@ using namespace std;
 // 89000000 is 1 sec:
 #define N_CPU_BURN 87000000*2 
 
-
+pthread_mutex_t lock;
 pthread_t t_0;
 pthread_t t_1;
 pthread_t t_2;
@@ -89,7 +89,7 @@ void work(int time_units, int task_no, char output)
   static unsigned int globalTime = 0;
   for(int j = 0; j < time_units; j++)
   {
-		printf("%d:",globalTime);
+		printf("%3d: ",globalTime);
 		globalTime++;
 		for(int j = 0; j < task_no ; j++) printf("\t");
 		printf("%d%c\n",task_no,output);
@@ -100,60 +100,80 @@ void work(int time_units, int task_no, char output)
 
 static void* thread_0(void *vptr)
 {
- int thread_no = *(int*)vptr;	
- while(1)
- {
-   work(1,thread_no,' ');
- }
- return NULL;
+	// Initialize thread.
+	int thread_no = *(int*)vptr;	
+	struct periodic_info info;
+	make_periodic(20000000, &info);
+
+	// Do periodic work.
+	while(1)
+ 	{
+  	work(1,thread_no,' ');
+		pthread_mutex_lock(&lock);
+  	work(3,thread_no,'R');
+		pthread_mutex_unlock(&lock);
+		wait_period(&info);
+	}
+
+ 	return NULL;
 }
 
 static void *thread_1(void *vptr)
 {
-	
-        int thread_no = *(int*)vptr;	
+	// Initialize thread.
+	int thread_no = *(int*)vptr;	
 	struct periodic_info info;
-
-	//printf("Thread 1 period 20 s\n");
 	make_periodic(20000000, &info);
-	while (1) 
-	{
-                work(3,thread_no,' ');		
+
+	// Do periodic work.
+	while(1)
+ 	{
+		sleep(4);
+  	work(2,thread_no,' ');
 		wait_period(&info);
 	}
-	return NULL;
+
+ 	return NULL;
 }
 
 static void *thread_2(void *vptr)
 {
-
-        int thread_no = *(int*)vptr;	
+	// Initialize thread.
+	int thread_no = *(int*)vptr;	
 	struct periodic_info info;
-
-	//printf("Thread 2 period 10 s\n");
 	make_periodic(20000000, &info);
-	while (1) {
-	        	
-                work(2,thread_no,' ');		
+
+	// Do periodic work.
+	while(1)
+ 	{
+		sleep(3);
+  	work(3,thread_no,' ');
+		pthread_mutex_lock(&lock);
+  	work(1,thread_no,'R');
+		pthread_mutex_unlock(&lock);
+  	work(1,thread_no,' ');
 		wait_period(&info);
 	}
-	return NULL;
+
+ 	return NULL;
 }
 
 static void *thread_3(void *vptr)
 {
-
-        int thread_no = *(int*)vptr;		
+	// Initialize thread.
+	int thread_no = *(int*)vptr;	
 	struct periodic_info info;
-
-	//printf("Thread 3 period 5 s\n");
 	make_periodic(20000000, &info);
-	while (1) {
-		
-                work(2,thread_no,' ');		
+
+	// Do periodic work.
+	while(1)
+ 	{
+		sleep(7);
+  	work(2,thread_no,' ');
 		wait_period(&info);
 	}
-	return NULL;
+
+ 	return NULL;
 }
 
 
@@ -165,7 +185,6 @@ int main(int argc, char *argv[])
 // int s,e;s=clock();work(1,0,'C');e=clock();cout<<endl<<e-s<<"us"<<endl;	
 	
 	// Scheduling parameters
-	
 	struct sched_param params_t0;
 	params_t0.sched_priority = 19;
 
@@ -179,35 +198,33 @@ int main(int argc, char *argv[])
 	params_t3.sched_priority = 25;
 	
 	
-        pthread_attr_t attr_t0;
+	pthread_attr_t attr_t0;
 	pthread_attr_t attr_t1;
-        pthread_attr_t attr_t2;
+	pthread_attr_t attr_t2;
 	pthread_attr_t attr_t3;
 		
 	pthread_attr_init(&attr_t0);
 	pthread_attr_init(&attr_t1);
 	pthread_attr_init(&attr_t2);
-        pthread_attr_init(&attr_t3);
-
+	pthread_attr_init(&attr_t3);
 
 	pthread_attr_setinheritsched(&attr_t0, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setinheritsched(&attr_t1, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setinheritsched(&attr_t2, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setinheritsched(&attr_t3, PTHREAD_EXPLICIT_SCHED);
 	
-
-
 	pthread_attr_setschedpolicy(&attr_t0, SCHED_FIFO);
 	pthread_attr_setschedpolicy(&attr_t1, SCHED_FIFO);
 	pthread_attr_setschedpolicy(&attr_t2, SCHED_FIFO);
 	pthread_attr_setschedpolicy(&attr_t3, SCHED_FIFO);
 
-
-
 	pthread_attr_setschedparam(&attr_t0, &params_t0);
 	pthread_attr_setschedparam(&attr_t1, &params_t1);
 	pthread_attr_setschedparam(&attr_t2, &params_t2);
 	pthread_attr_setschedparam(&attr_t3, &params_t3);	
+
+	// Initialize mutex.
+	pthread_mutex_init(&lock, NULL);
 
 	//Create threads with scheduling parameters
 	int ids[] = { 0, 1, 2, 3 };
